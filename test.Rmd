@@ -1,0 +1,298 @@
+---
+title: "STK1000 - Innlevering 1 (Oppgave 1)"
+author: "xxxxxxx-xxxxx"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+# Vis koden, ryddig output
+knitr::opts_chunk$set(echo=TRUE, comment="", collapse=TRUE,
+                      message=FALSE, warning=FALSE,
+                      fig.align='center', fig.width=6, fig.height=4)
+
+# Data (samme som i skriptet ditt)
+filepath = "https://www.uio.no/studier/emner/matnat/math/STK1000/data/obligdata/oblig1/blinderndaily.txt"
+data = read.table(filepath, header=TRUE, sep=";")
+x <- data$temp
+```
+
+## A) Histogram
+Beskriv kort: hvor ligger mesteparten, og om det er skjevhet/hale.
+
+```{r}
+hist(x,
+     col = "#2044cc",
+     xlab = "datapunkter",
+     ylab = "observasjoner",
+     border = NA,
+     breaks = 20,
+     main = "Histogram")
+```
+
+**Tolkning A (kort):** Mest rundt 16–18 C. De fleste dager ca. 14–22 C. Litt høyrehale.
+
+---
+
+## B) Gjennomsnitt og median
+Hva betyr tallene? Gjennomsnitt = snitt; median = midtverdi (50% under/over).
+
+```{r}
+avgx = mean(x, na.rm = TRUE); avgx
+medx = median(x, na.rm = TRUE); medx
+min(x, na.rm = TRUE); max(x, na.rm = TRUE)
+```
+
+**Tolkning B:** Median er mer robust mot uteliggere enn gjennomsnitt.
+
+---
+
+## C) Standardavvik og IQR
+Forklar: sd = spredning rundt snittet; IQR = Q3 - Q1 (midterste 50%), robust.
+
+```{r}
+s   = sd(x, na.rm = TRUE); s
+iqr = IQR(x, na.rm = TRUE); iqr
+summary(x)
+```
+
+**Tolkning C:** Stor sd = stor variasjon. IQR forteller bredden til midten av fordelingen.
+
+---
+
+## D) Normalfordeling (QQ-plot)
+Vurder om punktene følger linja.
+
+```{r}
+qqnorm(x, main = "Normal Q-Q-plot")
+qqline(x, col = "#cc0020", lwd = 2)
+```
+
+**Tolkning D:** Ligger punktene omtrent langs linja, er normalantakelsen ok (små avvik i halene er greit).
+
+---
+
+## E) Standardisert verdi for 15 C
+Formel: z = (x - gjennomsnitt) / sd. Regn ut for 15 C og tolk.
+
+```{r}
+z = (15 - avgx)/s; z
+```
+
+**Tolkning E:** z < 0 betyr at 15 C ligger under snittet; |z| sier hvor mange sd unna.
+
+---
+
+## F) Andel dager med temp > 20 C
+Normalantakelse med `pnorm`, og den faktiske andelen i data.
+
+```{r}
+p20 = 1 - pnorm(20, mean = avgx, sd = s); p20
+p20_emp = mean(x > 20, na.rm = TRUE); p20_emp
+```
+
+**Tolkning F:** `1 - pnorm(20, mean, sd)` gir andel over 20 C hvis vi antar normalfordeling. `p20_emp` er faktisk andel i datasettet.
+
+---
+
+## G) 2018 og 2025 vs. andre år
+Del opp data, tell dager > 20 C, og sammenlign.
+
+```{r}
+ind = which(data$year %in% c(2018, 2025))
+data_18_25    = data[ind,]
+data_not18_25 = data[-ind,]
+
+n18 = sum(data_18_25$year == 2018); n18
+over18 = sum(data_18_25$temp > 20 & data_18_25$year == 2018); over18
+p18 = if (n18 > 0) over18 / n18 else NA; p18
+
+n25 = sum(data_18_25$year == 2025); n25
+over25 = sum(data_18_25$temp > 20 & data_18_25$year == 2025); over25
+p25 = if (n25 > 0) over25 / n25 else NA; p25
+
+nO = nrow(data_not18_25); nO
+overO = sum(data_not18_25$temp > 20); overO
+pO = overO / nO; pO
+```
+
+**Tolkning G:** 2018 har mye høyere andel > 20 C enn “andre år” (uvanlig varm). 2025 er også høyere enn “andre år”, men lavere enn 2018.
+
+
+## Oppgave 2 – Ulv
+
+### 2a) Data og variabler
+```{r}
+wolfpath = "http://www.uio.no/studier/emner/matnat/math/STK1000/data/obligdata/oblig1/wolves.txt"
+wolf = read.table(wolfpath, header=TRUE)
+head(wolf, 3)      # sex (F/M), population (1=lett jaktet, 2=tungt), cpmg (kortisol), tpmg (testosteron)
+```
+
+### 2b) Oppsummer kategoriske variabler (table + pie)
+```{r}
+table(wolf$sex)
+pie(table(wolf$sex), main = "Kjønn")
+
+table(wolf$population)  # 1 = lett jaktet, 2 = tungt jaktet
+pie(table(wolf$population), main = "Jaktnivå (1=lett, 2=tungt)")
+```
+
+### 2c) Del opp data og plott kortisol (cpmg)
+```{r}
+wolf_lett  = wolf[wolf$population==1,]
+wolf_tungt = wolf[wolf$population==2,]
+
+par(mfrow=c(2,2))
+hist(wolf_lett$cpmg,  main="Lett jaktet: cpmg",  col="#2044cc", border=NA)
+boxplot(wolf_lett$cpmg,  main="Lett jaktet: cpmg")
+hist(wolf_tungt$cpmg, main="Tungt jaktet: cpmg", col="#cc2044", border=NA)
+boxplot(wolf_tungt$cpmg, main="Tungt jaktet: cpmg")
+par(mfrow=c(1,1))
+```
+
+### 2d) Gjennomsnitt og median av cpmg (per jaktnivå) + kort sammenligning
+```{r}
+m_lett  = mean(wolf_lett$cpmg,  na.rm=TRUE);  md_lett  = median(wolf_lett$cpmg,  na.rm=TRUE)
+m_tungt = mean(wolf_tungt$cpmg, na.rm=TRUE);  md_tungt = median(wolf_tungt$cpmg, na.rm=TRUE)
+
+m_lett; md_lett
+m_tungt; md_tungt
+```
+
+**Kort tolkning 2d:**  
+- Lett jaktet: `r round(m_lett,2)` vs `r round(md_lett,2)` → `r if (m_lett>md_lett) "gjennomsnitt > median (høyreskjev)" else if (m_lett<md_lett) "gjennomsnitt < median (venstreskjev)" else "likt"` .  
+- Tungt jaktet: `r round(m_tungt,2)` vs `r round(md_tungt,2)` → `r if (m_tungt>md_tungt) "gjennomsnitt > median (høyreskjev)" else if (m_tungt<md_tungt) "gjennomsnitt < median (venstreskjev)" else "likt"` .  
+- Sammenlignet: `r if (m_tungt>m_lett) "tungt jaktet har høyere nivå enn lett jaktet." else if (m_tungt<m_lett) "lett jaktet har høyere nivå enn tungt jaktet." else "nivåene er omtrent like."`
+
+### 2e) Hvilken oppsummering passer best?
+```{r}
+sd_lett  = sd(wolf_lett$cpmg,  na.rm=TRUE);  iqr_lett  = IQR(wolf_lett$cpmg,  na.rm=TRUE)
+sd_tungt = sd(wolf_tungt$cpmg, na.rm=TRUE);  iqr_tungt = IQR(wolf_tungt$cpmg, na.rm=TRUE)
+
+sd_lett; iqr_lett
+sd_tungt; iqr_tungt
+```
+
+**Kort svar 2e:** Begge gruppene viser skjevhet/uteliggere i plott og forskjell mellom gjennomsnitt/median → **bruk femtallsoppsummering (median + IQR)** for å beskrive kortisolnivået i både lett og tungt jaktet.
+
+### 2f) Normalitet av cpmg (per jaktnivå)
+```{r}
+par(mfrow=c(1,2))
+qqnorm(wolf_lett$cpmg,  main="QQ-plot: cpmg (lett)");  qqline(wolf_lett$cpmg,  col=2)
+qqnorm(wolf_tungt$cpmg, main="QQ-plot: cpmg (tungt)"); qqline(wolf_tungt$cpmg, col=2)
+par(mfrow=c(1,1))
+
+p_lett  = shapiro.test(wolf_lett$cpmg)$p.value
+p_tungt = shapiro.test(wolf_tungt$cpmg)$p.value
+
+p_lett; p_tungt
+```
+
+**Konklusjon 2f:**  
+- Man kan se tydelige avvik i begge halene som vil antyde at det ikke er en normalfordeling når det kommer til starten og slutten.
+
+
+
+
+
+
+## Oppgave 3 – Månedstemperatur (august vs. september)
+
+### 3a) Les data, opprette to datasett deretter forklare
+```{r}
+mpath = "https://www.uio.no/studier/emner/matnat/math/STK1000/data/obligdata/oblig1/blindernmonthly.txt"
+m = read.table(mpath, header=TRUE, sep=";")
+
+data8 = m[m$month==8, ]   # august
+data9 = m[m$month==9, ]   # september
+
+summary(data8$temp)
+summary(data9$temp)
+
+meanAug   = mean(data8$temp,   na.rm=TRUE)
+medianAug = median(data8$temp, na.rm=TRUE)
+iqrAug    = IQR(data8$temp,    na.rm=TRUE)
+
+meanSep   = mean(data9$temp,   na.rm=TRUE)
+medianSep = median(data9$temp, na.rm=TRUE)
+iqrSep    = IQR(data9$temp,    na.rm=TRUE)
+```
+**Konklusjon 3a:** August er generelt varmere enn september. Medianen i august = `r round(medianAug,1)` grader og medianen i september = `r round(medianSep,1)` grader.
+
+---
+
+### 3b) Spredningsplott (august på x, september på y)
+```{r}
+augTemp  = data8$temp
+septTemp = data9$temp
+
+plot(augTemp, septTemp,
+     xlab="Månedstemperatur i august",
+     ylab="Månedstemperatur i september",
+     main="")
+```
+**Konklusjon 3b:** Kan konkludere på generelt plan av månedstemperaturen i agust er høyere en september og at de samles rundt 14-18 grader området og generelt er positivt korrelerte.
+
+---
+
+### 3c) Korrelasjon
+```{r}
+r = cor(augTemp, septTemp, use="complete.obs")
+r
+```
+**Konklusjon 3c:** r = `r round(r,2)`. Tolkning: `r ifelse(abs(r)>=0.7,"sterk", ifelse(abs(r)>=0.4,"moderat","svak"))` positiv sammenheng, hvor korrelasjon er hvor mye de svinger/beveger seg sammen som et mål fra -1 til 1.
+
+---
+
+### 3d) Lineær modell og regresjonslinje (nytt plott + linje)
+```{r}
+par(mex=0.75, cex=0.75)
+plot(augTemp, septTemp,
+     xlab="Månedstemperatur i august",
+     ylab="Månedstemperatur i september",
+     main="")
+fit = lm(septTemp ~ augTemp)
+abline(fit, lwd=2)
+summary(fit)
+```
+**Konklusjon 3d:** Linja heller oppover, modellen fanger den positive sammenhengen.
+
+---
+
+### 3e) Skjæringspunkt og stigningstall
+```{r}
+b0 = coef(fit)[1]   # skjæringspunkt
+b1 = coef(fit)[2]   # stigningstall
+b0; b1
+```
+**Konklusjon 3e:** Skjæringspunkt b0 = `r round(b0,2)` (modellens september når august = 0). Stigningstall b1 = `r round(b1,2)`; en økning på 1 grad i august gir i snitt `r round(b1,2)` grader høyere i september. Intercepten er hvor den skjærer i Y aksen altså hvor det starter, så når modellen settes i 0 så starter den på ca 6 grader.
+
+---
+
+### 3f) Forklart variasjon (R^2) og sammenligning med r^2
+```{r}
+R2 = summary(fit)$r.squared
+R2
+r^2
+```
+**Konklusjon 3f:** R^2 = `r round(100*R2,1)` prosent av variasjonen i september som forklares av august. De stemmer greit kan man si i enkel lineær regresjon og fra hva man ser i c på sånn ca 0.38. Ved R^2 på 95 og opp er signifikant og alt under 0.4 er fortsatt ikke noe særlig men det er noe.
+
+---
+
+### 3g) Residualplott
+```{r}
+plot(augTemp, residuals(fit),
+     xlab="Månedstemperatur i august", ylab="Residualer")
+abline(h=0)
+```
+**Konklusjon 3g:** Residualene ligger rundt 0 uten tydelig kurve eller trend. Spredningen virker omtrent jevn. Modellen (rett linje) er ok, men ikke perfekt. Man kan med dette at det er mye variasjon og dermed ikke mye som forklares så modellen er ikke direkte veldig handlingsdyktig eller forkalrende.
+
+---
+
+### 3h) Prediksjon når august = 16.9
+```{r}
+pred = predict(fit, newdata=data.frame(augTemp=16.9))
+pred
+```
+**Konklusjon 3h:** Predikert september ved august 16.9 er `r round(pred,1)` grader. Vanlig september (gjennomsnitt) er ca. `r round(meanSep,1)` grader, så dette er `r if (pred>meanSep) "varmere enn vanlig." else "kaldere enn vanlig."`
