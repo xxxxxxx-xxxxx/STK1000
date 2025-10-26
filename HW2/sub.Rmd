@@ -1,0 +1,248 @@
+---
+title: "STK1000 – Obligatorisk innlevering 2"
+author: "xxxxxxx-xxxxx"
+output:
+  pdf_document:
+    latex_engine: xelatex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo=TRUE, comment="", collapse=TRUE,
+  message=FALSE, warning=FALSE,
+  fig.align='center', fig.width=6.5, fig.height=4.2
+)
+```
+
+# Oppgave 1 – Genlengder (populasjon og utvalgsfordeling)
+
+```{r}
+# Farger + plot-font
+mck_blue      <- "#0033A0"
+mck_teal      <- "#00A3A1"
+mck_grey      <- "#6D6E71"
+mck_lightblue <- "#D9EAF7"
+op <- par(family = "Arial")
+
+# Data
+datapath <- "https://www.uio.no/studier/emner/matnat/math/STK1000/data/obligdata/oblig2/gene.txt"
+genes    <- read.table(datapath, header=TRUE, sep=";")
+Gene.Lengths <- genes$Gene.Lengths
+```
+
+## 1a) Populasjon: mu og sigma + plott
+```{r}
+mu    <- mean(Gene.Lengths, na.rm=TRUE)
+sigma <- sd(Gene.Lengths,   na.rm=TRUE)
+cat("1a) mu =", round(mu,2), " og sigma =", round(sigma,2), "\n")
+
+hist(Gene.Lengths,
+     breaks="FD",
+     col=mck_lightblue, border=NA,
+     main="Oppg 1a: Histogram av genlengder",
+     xlab="Genlengde", ylab="Frekvens")
+
+qqnorm(Gene.Lengths, main="Oppg 1a: QQ-plot")
+qqline(Gene.Lengths, col=mck_teal, lwd=2)
+```
+
+**Tolkning 1a:** Fordelingen er moderat høyreskjev (hale mot høyre). QQ-plottet viser avvik i høyre hale, så normalantakelsen er bare delvis rimelig. Nivå og spredning er ca. `r round(mu,2)` og `r round(sigma,2)`.
+
+## 1b) Utvalg n=100: ett x̄ + fordeling av x̄
+```{r}
+set.seed(100)
+samp100_once <- sample(Gene.Lengths, 100, replace=TRUE)
+xbar100_once <- mean(samp100_once)
+cat("1b) Ett utvalg n=100, xbar =", round(xbar100_once,2), "\n")
+
+B <- 100
+means100 <- replicate(B, mean(sample(Gene.Lengths, 100, replace=TRUE)))
+
+cat("1b) mean(xbar) =", round(mean(means100),2),
+    " sd(xbar) =", round(sd(means100),2),
+    " teori sigma/sqrt(100) =", round(sigma/sqrt(100),2), "\n")
+
+hist(means100, breaks="FD", col=mck_lightblue, border=NA,
+     main="Oppg 1b: xbar (n=100, B=100)", xlab="xbar", ylab="Frekvens")
+
+qqnorm(means100, main="Oppg 1b: QQ-plot xbar (n=100)")
+qqline(means100, col=mck_teal, lwd=2)
+```
+
+**Tolkning 1b:** x̄ (n=100) er smal og tilnærmet normal. `sd(x̄)=` `r round(sd(means100),2)` ligger nær teori `r round(sigma/sqrt(100),2)`, altså stabile gjennomsnitt.
+
+## 1c) Utvalg n=10: fordeling av x̄
+```{r}
+set.seed(101)
+B <- 100
+means10 <- replicate(B, mean(sample(Gene.Lengths, 10, replace=TRUE)))
+
+cat("1c) mean(xbar) =", round(mean(means10),2),
+    " sd(xbar) =", round(sd(means10),2),
+    " teori sigma/sqrt(10) =", round(sigma/sqrt(10),2), "\n")
+
+hist(means10, breaks="FD", col=mck_lightblue, border=NA,
+     main="Oppg 1c: xbar (n=10, B=100)", xlab="xbar", ylab="Frekvens")
+
+qqnorm(means10, main="Oppg 1c: QQ-plot xbar (n=10)")
+qqline(means10, col=mck_teal, lwd=2)
+```
+
+**Tolkning 1c:** x̄ (n=10) er bredere og mer variabel enn for n=100; `sd(x̄)=` `r round(sd(means10),2)` > `r round(sigma/sqrt(100),2)`. Mindre utvalg gir mer variasjon.
+
+## 1d) P(x̄ > 3000) via CLT
+```{r}
+p10  <- 1 - pnorm(3000, mean=mu, sd=sigma/sqrt(10))
+p100 <- 1 - pnorm(3000, mean=mu, sd=sigma/sqrt(100))
+cat("1d) P(xbar > 3000), n=10  =", signif(p10,3),  "\n")
+cat("1d) P(xbar > 3000), n=100 =", signif(p100,3), "\n")
+```
+
+**Tolkning 1d:** Sannsynligheten blir mye mindre når n øker, fordi x̄ samler seg tettere rundt μ.
+
+## 1e) Bias og varians for x̄
+```{r}
+cat("1e) xbar er ubiasert (bias=0). Varians(xbar)=sigma^2/n: større n gir mer presise anslag.\n")
+par(op)
+```
+
+---
+
+# Oppgave 2 – Ozon i NYC (mai–sept 1973)
+
+```{r}
+mck_blue      <- "#0033A0"
+mck_teal      <- "#00A3A1"
+mck_grey      <- "#6D6E71"
+mck_lightblue <- "#D9EAF7"
+op <- par(family = "Arial")
+
+aq    <- airquality
+O3    <- aq$Ozone
+Temp  <- aq$Temp
+Month <- aq$Month
+Day   <- aq$Day
+```
+
+## 2a) Oppsummer tall og figurer
+```{r}
+mean_O3   <- mean(O3, na.rm=TRUE)
+median_O3 <- median(O3, na.rm=TRUE)
+sd_O3     <- sd(O3, na.rm=TRUE)
+iqr_O3    <- IQR(O3, na.rm=TRUE)
+
+mean_O3; median_O3; sd_O3; iqr_O3
+summary(O3)
+
+hist(O3, breaks="FD", col=mck_blue, border=NA,
+     main="2a: Histogram av Ozone (ppb)",
+     xlab="Ozone (ppb)", ylab="Frekvens")
+
+boxplot(O3, horizontal=TRUE, col=mck_teal, main="2a: Boxplot Ozone")
+
+qqnorm(O3, main="2a: QQ-plot Ozone"); qqline(O3, col=mck_blue, lwd=2)
+```
+
+**Tolkning 2a:** Ozone er høyreskjev med noen uteliggere. Gjennomsnitt `r round(mean_O3,1)`, median `r round(median_O3,1)`, sd `r round(sd_O3,1)`, IQR `r round(iqr_O3,1)`. Normalantakelsen er svak, men utvalgsstørrelsen gjør t-metoder greie med litt forsiktighet.
+
+## 2b) Test H0: μ=30 (H1: μ>30) + 90% og 99% KI
+```{r}
+t_greater_90 <- t.test(O3, mu=30, alternative="greater", conf.level=0.90)
+t_greater_99 <- t.test(O3, mu=30, alternative="greater", conf.level=0.99)
+t_greater_90
+t_greater_99
+```
+
+**Tolkning 2b:** Ensidig p-verdi = `r signif(t_greater_90$p.value,3)`. Ved 5 %-nivå: `r ifelse(t_greater_90$p.value<0.05,"avviser H0 og konkluderer μ>30","avviser ikke H0")`.  
+90 % KI: [`r round(t_greater_90$conf.int[1],1)`, `r round(t_greater_90$conf.int[2],1)`]; 99 % KI: [`r round(t_greater_99$conf.int[1],1)`, `r round(t_greater_99$conf.int[2],1)`]. 99 % er bredere enn 90 %.
+
+## 2c) Juli+august vs. mai+juni+september
+```{r}
+keep <- !is.na(O3) & !is.na(Month)
+O3_keep <- O3[keep]; Month_keep <- Month[keep]
+
+grp <- ifelse(Month_keep %in% c(7,8), "JA", "MJS")
+grp <- factor(grp, levels=c("MJS","JA"))
+
+tt2 <- t.test(O3_keep ~ grp)
+tt2
+
+grp_mean <- tapply(O3_keep, grp, mean, na.rm=TRUE)
+grp_mean
+
+par(mfrow=c(1,2))
+boxplot(O3_keep ~ grp, col=c(mck_lightblue, mck_teal),
+        main="2c: Ozone per gruppe", xlab="Gruppe", ylab="Ozone (ppb)")
+stripchart(O3_keep ~ grp, vertical=TRUE, method="jitter",
+           pch=16, col=mck_grey, add=TRUE)
+par(mfrow=c(1,1))
+par(op)
+```
+
+**Tolkning 2c:** Middel JA=`r round(grp_mean['JA'],1)`, MJS=`r round(grp_mean['MJS'],1)`. P-verdi = `r signif(tt2$p.value,3)` → `r ifelse(tt2$p.value<0.05,"signifikant forskjell","ingen signifikant forskjell")` (retning: `r ifelse(grp_mean['JA']>grp_mean['MJS'],"JA > MJS","JA < MJS")`).
+
+---
+
+# Oppgave 3 – Månedstemperatur (kun 3a–3c)
+
+```{r}
+mck_blue      <- "#0033A0"
+mck_teal      <- "#00A3A1"
+mck_grey      <- "#6D6E71"
+mck_lightblue <- "#D9EAF7"
+op <- par(family = "Arial")
+
+mpath <- "https://www.uio.no/studier/emner/matnat/math/STK1000/data/obligdata/oblig1/blindernmonthly.txt"
+m     <- read.table(mpath, header=TRUE, sep=";")
+
+data8 <- m[m$month==8, ]   # august
+data9 <- m[m$month==9, ]   # september
+```
+
+## 3a) Oppsummer
+```{r}
+summary(data8$temp)
+summary(data9$temp)
+
+meanAug   <- mean(data8$temp,   na.rm=TRUE)
+medianAug <- median(data8$temp, na.rm=TRUE)
+iqrAug    <- IQR(data8$temp,    na.rm=TRUE)
+
+meanSep   <- mean(data9$temp,   na.rm=TRUE)
+medianSep <- median(data9$temp, na.rm=TRUE)
+iqrSep    <- IQR(data9$temp,    na.rm=TRUE)
+
+cat("3a) Median august =", round(medianAug,1),
+    " | Median september =", round(medianSep,1),
+    " | IQR august =", round(iqrAug,1),
+    " | IQR september =", round(iqrSep,1), "\n")
+```
+
+**Tolkning 3a:** August er varmere enn september: median august `r round(medianAug,1)` mot september `r round(medianSep,1)`. IQR-ene (`r round(iqrAug,1)` og `r round(iqrSep,1)`) viser tilsvarende spredning.
+
+## 3b) Spredningsplott (august på x, september på y)
+```{r}
+augTemp  <- data8$temp
+septTemp <- data9$temp
+
+plot(augTemp, septTemp,
+     pch=16, col=mck_grey,
+     xlab="Månedstemperatur i august",
+     ylab="Månedstemperatur i september",
+     main="3b: Spredningsplott (aug vs sep)")
+```
+
+**Tolkning 3b:** Positiv sammenheng: varmere august henger sammen med varmere september.
+
+## 3c) Korrelasjon
+```{r}
+r <- cor(augTemp, septTemp, use="complete.obs")
+r
+
+styrke  <- if (abs(r)>=0.7) "sterk" else if (abs(r)>=0.4) "moderat" else "svak"
+retning <- if (r>=0) "positiv" else "negativ"
+cat("3c) r =", round(r,2), "→", styrke, " ", retning, " sammenheng.\n", sep="")
+par(op)
+```
+
+**Tolkning 3c:** r=`r round(r,2)` gir `r styrke` positiv sammenheng; tydelig, men ikke veldig sterk.
